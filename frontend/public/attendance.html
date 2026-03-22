@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Self Attendance App</title>
+  <style>
+  body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  background: linear-gradient(135deg, #ffb3b3, #c2e0ff);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header-img {
+  margin-top: 10px;
+}
+
+.header-img img {
+  max-width: 120%;
+  border-radius: 30px;
+}
+
+.input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  flex-wrap: wrap;
+}
+
+.input-container input {
+  padding: 10px;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.add-btn {
+  padding: 10px 15px;
+  background: linear-gradient(to right, #28a745, #218838);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.saved-list {
+  margin: 10px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  display: inline-block;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.saved-list button {
+  margin: 3px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.student-calendar {
+  margin: 30px auto;
+  padding: 20px;
+  border: 2px solid #aaa;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.85);
+  width: fit-content;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  border-collapse: collapse;
+  margin: auto;
+  background-color: #fff;
+}
+
+th, td {
+  border: 1px solid #333;
+  padding: 10px;
+  width: 50px;
+  height: 50px;
+  cursor: default;
+  text-align: center;
+}
+
+.present { background-color: #28a745; color: white; }
+.absent { background-color: #dc3545; color: white; }
+.half { background-color: #fd7e14; color: white; }
+
+.summary, .yearly-box {
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 15px;
+  border-radius: 10px;
+  margin: 10px;
+  display: inline-block;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  font-weight: bold;
+}
+
+.summary {
+  background: linear-gradient(135deg,  #feccea,#b4fb7d);
+  color: rgb(40, 32, 255);
+  text-align: center;
+}
+
+.yearly-box {
+  background: linear-gradient(135deg, #feccea, #b4fb7d);
+  color: rgb(25, 18, 227);
+  text-align: center;
+}
+
+.delete-btn {
+  background-color: red;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+}
+
+.student-photo {
+  margin: 10px;
+}
+
+.student-photo img {
+  max-width: 120px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+</style>
+
+</head>
+<body>
+  <div class="header-img">
+    <img src="download.png" alt="Saved Image" />
+  </div>
+
+  <h2>Self Attendance Website</h2>
+
+  <div class="saved-list">
+    <h4>Saved Students Data</h4>
+    <div id="savedStudentsList"></div>
+  </div>
+
+  <div class="input-container">
+    <input type="text" id="studentName" placeholder="👤 Student Name" />
+    <input type="number" id="rollNumber" placeholder="🔢 Roll Number" />
+    <input type="file" id="studentPhoto" accept="image/*" />
+    <button class="add-btn" onclick="addStudentCalendar()">➕ Add Student</button>
+  </div>
+
+  <div id="studentsContainer"></div>
+
+  <script>const studentsContainer = document.getElementById('studentsContainer');
+const savedStudentsList = document.getElementById('savedStudentsList');
+let studentData = loadDataFromLocalStorage();
+
+function loadDataFromLocalStorage() {
+  const stored = localStorage.getItem('studentData');
+  return stored ? JSON.parse(stored) : {};
+}
+
+function saveDataToLocalStorage() {
+  localStorage.setItem('studentData', JSON.stringify(studentData));
+}
+
+function addStudentCalendar() {
+  const name = document.getElementById('studentName').value.trim();
+  const roll = document.getElementById('rollNumber').value.trim();
+  const photoFile = document.getElementById('studentPhoto').files[0];
+
+  if (!name || !roll) return alert("Enter valid name and roll number.");
+  if (Object.values(studentData).some(s => s.roll === roll)) {
+    return alert("Roll number already exists.");
+  }
+
+  const id = "student-" + Date.now();
+
+  if (photoFile) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const photoData = reader.result;
+      saveStudent(id, name, roll, photoData);
+      renderAfterSave(id);
+    };
+    reader.readAsDataURL(photoFile);
+  } else {
+    saveStudent(id, name, roll, '');
+    renderAfterSave(id);
+  }
+}
+
+function saveStudent(id, name, roll, photo) {
+  studentData[id] = {
+    id,
+    name,
+    roll,
+    photo,
+    currentDate: new Date().toISOString().split('T')[0],
+    attendance: {}
+  };
+  saveDataToLocalStorage();
+}
+
+function renderAfterSave(id) {
+  updateSavedList();
+  studentsContainer.innerHTML = '';
+  renderStudentCalendar(id);
+}
+
+function updateSavedList() {
+  savedStudentsList.innerHTML = '';
+  Object.values(studentData).forEach(student => {
+    const btn = document.createElement('button');
+    btn.textContent = `${student.name} (${student.roll})`;
+    btn.onclick = () => {
+      studentsContainer.innerHTML = '';
+      renderStudentCalendar(student.id);
+    };
+    savedStudentsList.appendChild(btn);
+  });
+}
+
+function renderStudentCalendar(id) {
+  const student = studentData[id];
+  const div = document.createElement('div');
+  div.className = 'student-calendar';
+  div.id = id;
+  div.innerHTML = `
+    <h3>${student.name} (${student.roll})</h3>
+    <div class="student-photo">${student.photo ? `<img src="${student.photo}" />` : ''}</div>
+    <div class="nav">
+      <button onclick="changeMonth('${id}', -1)">Previous</button>
+      <h3 id="monthYear-${id}"></h3>
+      <button onclick="changeMonth('${id}', 1)">Next</button>
+    </div>
+    <table id="calendar-${id}"></table>
+    <div class="bottom-row">
+      <div class="summary"><p id="summary-${id}"></p></div>
+      <div class="yearly-box"><p id="yearlySummary-${id}"></p></div>
+    </div>
+    <div class="bottom-row">
+      <button class="delete-btn" onclick="deleteStudent('${id}')">Delete Student</button>
+    </div>`;
+  studentsContainer.appendChild(div);
+  generateCalendar(student);
+}
+
+function generateCalendar(student) {
+  const { id, currentDate, attendance } = student;
+  const dateObj = new Date(currentDate);
+  const month = dateObj.getMonth();
+  const year = dateObj.getFullYear();
+  const key = `${year}-${month}`;
+  if (!attendance[key]) attendance[key] = {};
+
+  document.getElementById(`monthYear-${id}`).textContent = `${dateObj.toLocaleString('default', { month: 'long' })} ${year}`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let html = '<tr>' + ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<th>${d}</th>`).join('') + '</tr><tr>';
+  for (let i = 0; i < firstDay; i++) html += '<td></td>';
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const status = attendance[key][day] || '';
+    html += `<td id="${id}-day-${day}" class="${status}" onclick="markAttendance('${id}', ${day})">${day}</td>`;
+    if ((day + firstDay) % 7 === 0) html += '</tr><tr>';
+  }
+  html += '</tr>';
+  document.getElementById(`calendar-${id}`).innerHTML = html;
+
+  updateMonthlySummary(id, attendance[key]);
+  updateYearlySummary(id, attendance);
+}
+
+function changeMonth(id, offset) {
+  const student = studentData[id];
+  const date = new Date(student.currentDate);
+  date.setMonth(date.getMonth() + offset);
+  student.currentDate = date.toISOString().split('T')[0];
+  generateCalendar(student);
+  saveDataToLocalStorage();
+}
+
+function markAttendance(id, day) {
+  const student = studentData[id];
+  const dateObj = new Date(student.currentDate);
+  const month = dateObj.getMonth();
+  const year = dateObj.getFullYear();
+  const key = `${year}-${month}`;
+  if (!student.attendance[key]) student.attendance[key] = {};
+
+  const cell = document.getElementById(`${id}-day-${day}`);
+  const states = ['', 'present', 'absent', 'half'];
+  let current = states.indexOf(cell.className || '');
+  current = (current + 1) % states.length;
+  cell.className = states[current];
+  student.attendance[key][day] = states[current];
+
+  updateMonthlySummary(id, student.attendance[key]);
+  updateYearlySummary(id, student.attendance);
+  saveDataToLocalStorage();
+}
+
+function updateMonthlySummary(id, monthData) {
+  const counts = { present: 0, absent: 0, half: 0 };
+  Object.values(monthData).forEach(status => { if (counts[status] !== undefined) counts[status]++; });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const presentDays = counts.present + counts.half * 0.5;
+  const percentage = total ? ((presentDays / total) * 100).toFixed(1) : '0';
+  document.getElementById(`summary-${id}`).textContent = `Monthly: P=${counts.present}, A=${counts.absent}, Half=${counts.half}, %=${percentage}%`;
+}
+
+function updateYearlySummary(id, attendance) {
+  const counts = { present: 0, absent: 0, half: 0 };
+  for (let key in attendance) {
+    Object.values(attendance[key]).forEach(status => {
+      if (counts[status] !== undefined) counts[status]++;
+    });
+  }
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const presentDays = counts.present + counts.half * 0.5;
+  const percentage = total ? ((presentDays / total) * 100).toFixed(1) : '0';
+  document.getElementById(`yearlySummary-${id}`).textContent = `Yearly: P=${counts.present}, A=${counts.absent}, Half=${counts.half}, %=${percentage}%`;
+}
+
+function deleteStudent(id) {
+  delete studentData[id];
+  saveDataToLocalStorage();
+  updateSavedList();
+  studentsContainer.innerHTML = '';
+}
+
+window.onload = updateSavedList;
+</script>
+</body>
+</html>
