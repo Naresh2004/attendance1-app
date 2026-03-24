@@ -12,9 +12,11 @@ app.use(cors())
 
 // ================= MONGODB =================
 
-mongoose.connect("mongodb://127.0.0.1:27017/enterpriseAuth")
-.then(()=>console.log("MongoDB Connected"))
-.catch(()=>console.log("MongoDB connection error"))
+const mongoose = require("mongoose");
+
+mongoose.connect(process.env.MONGO_URI)
+.then(()=> console.log("MongoDB connected"))
+.catch(err => console.log(err));
 
 
 // ================= AUTH ROUTES =================
