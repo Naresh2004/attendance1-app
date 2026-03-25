@@ -120,7 +120,7 @@ try{
 setLoading(true)
 
 const res=await axios.post(
-"http://localhost:5000/api/login",
+"https://attendance-backend-lghd.onrender.com",
 {email,password}
 )
 

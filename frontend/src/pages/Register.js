@@ -37,7 +37,7 @@ try{
 setLoading(true)
 
 const res=await axios.post(
-"http://localhost:5000/api/send-signup-otp",
+"https://attendance-backend-lghd.onrender.com",
 {email}
 )
 
@@ -72,7 +72,7 @@ try{
 setLoading(true)
 
 const res=await axios.post(
-"http://localhost:5000/api/verify-signup-otp",
+"https://attendance-backend-lghd.onrender.com",
 {email,password,otp}
 )
 

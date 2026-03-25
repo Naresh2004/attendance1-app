@@ -301,7 +301,7 @@ try{
 setLoading(true)
 
 const res = await axios.post(
-"http://localhost:5000/api/forgot-password",
+"https://attendance-backend-lghd.onrender.com",
 {email}
 )
 
@@ -349,7 +349,7 @@ return
 try{
 
 const res=await axios.post(
-"http://localhost:5000/api/verify-otp",
+"https://attendance-backend-lghd.onrender.com",
 {email,otp:otpValue}
 )
 
@@ -387,7 +387,7 @@ return
 try{
 
 const res=await axios.post(
-"http://localhost:5000/api/reset-password",
+"https://attendance-backend-lghd.onrender.com",
 {
   email,
   password,
