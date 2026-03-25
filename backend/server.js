@@ -1,230 +1,173 @@
-const express = require("express")
-const mongoose = require("mongoose")
-const cors = require("cors")
-const multer = require("multer")
-const path = require("path")
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const multer = require("multer");
+const path = require("path");
 
-const app = express()
+const app = express();
 
-app.use(express.json())
-app.use(cors())
+app.use(express.json());
+app.use(cors());
 
 
 // ================= MONGODB =================
-
-const mongoose = require("mongoose");
-
 mongoose.connect(process.env.MONGO_URI)
-.then(()=> console.log("MongoDB connected"))
+.then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
 
 // ================= AUTH ROUTES =================
-
-app.use("/api",require("./routes/auth"))
+app.use("/api", require("./routes/auth"));
 
 
 // ================= FILE UPLOAD =================
-
 const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  }
+});
 
-destination:(req,file,cb)=>{
-cb(null,"uploads/")
-},
-
-filename:(req,file,cb)=>{
-cb(null,Date.now()+"-"+file.originalname)
-}
-
-})
-
-const upload = multer({storage})
+const upload = multer({ storage });
 
 
 // ================= STUDENT SCHEMA =================
-
 const studentSchema = new mongoose.Schema({
+  name: String,
+  mobile: String,
+  image: String,
+  attendance: [
+    {
+      date: String,
+      status: String
+    }
+  ]
+});
 
-name:String,
-mobile:String,
-image:String,
-
-attendance:[
-{
-date:String,
-status:String
-}
-]
-
-})
-
-const Student = mongoose.model("Student",studentSchema)
+const Student = mongoose.model("Student", studentSchema);
 
 
 // ================= ADD STUDENT =================
+app.post("/api/students", upload.single("image"), async (req, res) => {
+  try {
+    const { name, mobile } = req.body;
 
-app.post("/api/students",upload.single("image"),async(req,res)=>{
+    const student = new Student({
+      name,
+      mobile,
+      image: req.file ? "/uploads/" + req.file.filename : null,
+      attendance: []
+    });
 
-try{
+    await student.save();
 
-const {name,mobile}=req.body
+    res.json(student);
 
-const student = new Student({
-
-name,
-mobile,
-image:req.file ? "/uploads/"+req.file.filename : null,
-attendance:[]
-
-})
-
-await student.save()
-
-res.json(student)
-
-}catch(err){
-
-console.log(err)
-res.status(500).json({msg:"Failed to add student"})
-
-}
-
-})
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ msg: "Failed to add student" });
+  }
+});
 
 
 // ================= GET STUDENTS =================
-
-app.get("/api/students",async(req,res)=>{
-
-try{
-
-const students = await Student.find()
-
-res.json(students)
-
-}catch{
-
-res.status(500).json({msg:"Failed to load students"})
-
-}
-
-})
+app.get("/api/students", async (req, res) => {
+  try {
+    const students = await Student.find();
+    res.json(students);
+  } catch {
+    res.status(500).json({ msg: "Failed to load students" });
+  }
+});
 
 
 // ================= DELETE STUDENT =================
-
-app.delete("/api/students/:id",async(req,res)=>{
-
-try{
-
-await Student.findByIdAndDelete(req.params.id)
-
-res.json({msg:"Student deleted"})
-
-}catch{
-
-res.status(500).json({msg:"Delete failed"})
-
-}
-
-})
+app.delete("/api/students/:id", async (req, res) => {
+  try {
+    await Student.findByIdAndDelete(req.params.id);
+    res.json({ msg: "Student deleted" });
+  } catch {
+    res.status(500).json({ msg: "Delete failed" });
+  }
+});
 
 
 // ================= MARK ATTENDANCE =================
+app.post("/api/attendance", async (req, res) => {
+  try {
+    const { studentId, date, status } = req.body;
 
-app.post("/api/attendance",async(req,res)=>{
+    const student = await Student.findById(studentId);
 
-try{
+    if (!student) {
+      return res.status(404).json({ msg: "Student not found" });
+    }
 
-const {studentId,date,status}=req.body
+    student.attendance.push({ date, status });
 
-const student = await Student.findById(studentId)
+    await student.save();
 
-if(!student){
-return res.status(404).json({msg:"Student not found"})
-}
+    res.json({ msg: "Attendance marked" });
 
-student.attendance.push({
-date,
-status
-})
-
-await student.save()
-
-res.json({msg:"Attendance marked"})
-
-}catch{
-
-res.status(500).json({msg:"Attendance failed"})
-
-}
-
-})
+  } catch {
+    res.status(500).json({ msg: "Attendance failed" });
+  }
+});
 
 
 // ================= GET STUDENT ATTENDANCE =================
+app.get("/api/attendance/:id", async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
 
-app.get("/api/attendance/:id",async(req,res)=>{
+    if (!student) {
+      return res.status(404).json({ msg: "Student not found" });
+    }
 
-try{
+    res.json(student.attendance);
 
-const student = await Student.findById(req.params.id)
-
-if(!student){
-return res.status(404).json({msg:"Student not found"})
-}
-
-res.json(student.attendance)
-
-}catch{
-
-res.status(500).json({msg:"Failed to load attendance"})
-
-}
-
-})
+  } catch {
+    res.status(500).json({ msg: "Failed to load attendance" });
+  }
+});
 
 
 // ================= ATTENDANCE PERCENTAGE =================
+app.get("/api/attendance-percent/:id", async (req, res) => {
+  try {
+    const student = await Student.findById(req.params.id);
 
-app.get("/api/attendance-percent/:id",async(req,res)=>{
+    if (!student) {
+      return res.status(404).json({ msg: "Student not found" });
+    }
 
-try{
+    const total = student.attendance.length;
+    const present = student.attendance.filter(a => a.status === "Present").length;
 
-const student = await Student.findById(req.params.id)
+    const percent = total ? ((present / total) * 100).toFixed(2) : 0;
 
-if(!student){
-return res.status(404).json({msg:"Student not found"})
-}
+    res.json({
+      total,
+      present,
+      percent
+    });
 
-const total = student.attendance.length
-
-const present = student.attendance.filter(
-a=>a.status==="Present"
-).length
-
-const percent = total ? ((present/total)*100).toFixed(2) : 0
-
-res.json({
-total,
-present,
-percent
-})
-
-}catch{
-
-res.status(500).json({msg:"Failed to calculate attendance"})
-
-}
-
-})
+  } catch {
+    res.status(500).json({ msg: "Failed to calculate attendance" });
+  }
+});
 
 
 // ================= STATIC UPLOADS =================
-
-app.use("/uploads",express.static(path.join(__dirname,"uploads")))
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
 // ================= SERVER =================
+const PORT = process.env.PORT || 5000;
 
-app.listen(5000,()=>console.log("Server running on 5000"))
+app.listen(PORT, () => {
+  console.log("Server running on", PORT);
+});
