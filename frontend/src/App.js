@@ -66,58 +66,51 @@ import "./Auth.css"
 
 function App(){
 
-const [page,setPage]=useState("login")
+// ✅ default null rakho (important)
+const [page,setPage]=useState(null)
 
-// auto login if token exists
+// ================= AUTO LOGIN =================
 useEffect(()=>{
 
 const token=localStorage.getItem("token")
 
 if(token){
 setPage("dashboard")
+}else{
+setPage("login")
 }
 
 },[])
+
+// ================= LOADING FIX =================
+if(page===null){
+return <div style={{textAlign:"center",marginTop:"50px"}}>Loading...</div>
+}
 
 return(
 
 <div className="main-container">
 
-{/* Page Title */}
+{/* TITLE */}
 
 {page==="login" && <h1 className="title">LOGIN PAGE</h1>}
-
 {page==="register" && <h1 className="title">CREATE ACCOUNT</h1>}
-
 {page==="forgot" && <h1 className="title">RESET PASSWORD</h1>}
-
 {page==="dashboard" && <h1 className="title">ATTENDANCE DASHBOARD</h1>}
 
 <div className="page-box">
 
-{/* Login Page */}
+{/* LOGIN */}
+{page==="login" && <Login setPage={setPage}/>}
 
-{page==="login" && (
-<Login setPage={setPage}/>
-)}
+{/* REGISTER */}
+{page==="register" && <Register setPage={setPage}/>}
 
-{/* Register Page */}
+{/* FORGOT */}
+{page==="forgot" && <Forgot setPage={setPage}/>}
 
-{page==="register" && (
-<Register setPage={setPage}/>
-)}
-
-{/* Forgot Password */}
-
-{page==="forgot" && (
-<Forgot setPage={setPage}/>
-)}
-
-{/* Attendance Dashboard */}
-
-{page==="dashboard" && (
-<Dashboard setPage={setPage}/>
-)}
+{/* DASHBOARD */}
+{page==="dashboard" && <Dashboard setPage={setPage}/>}
 
 </div>
 

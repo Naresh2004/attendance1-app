@@ -2,7 +2,7 @@ import React,{useState,useEffect} from "react"
 import axios from "axios"
 import "../Auth.css"
 
-// ✅ FIXED BASE URL
+// ✅ BASE URL
 const API = "https://attendance-backend-lghd.onrender.com/api/auth"
 
 export default function Login({setPage}){
@@ -12,16 +12,21 @@ const [password,setPassword]=useState("")
 const [show,setShow]=useState(false)
 const [loading,setLoading]=useState(false)
 
-// MESSAGE STATE
 const [msg,setMsg]=useState("")
 const [msgType,setMsgType]=useState("")
 
-// AUTO HIDE MESSAGE
+// ================= AUTO LOGIN =================
+useEffect(()=>{
+const token = localStorage.getItem("token")
+if(token){
+setPage("dashboard")
+}
+},[])
+
+// ================= AUTO HIDE MESSAGE =================
 useEffect(()=>{
 if(msg){
-const timer=setTimeout(()=>{
-setMsg("")
-},2000)
+const timer=setTimeout(()=>setMsg(""),2000)
 return ()=>clearTimeout(timer)
 }
 },[msg])
@@ -39,22 +44,23 @@ try{
 
 setLoading(true)
 
-const res=await axios.post(
-`${API}/login`,   // ✅ FIXED
-{email,password}
-)
+const res=await axios.post(`${API}/login`,{
+email,
+password
+})
 
 // ✅ SUCCESS
 if(res.data.success){
 
+// save token
 localStorage.setItem("token",res.data.token)
 
+// success msg
 setMsg("Login Successful")
 setMsgType("success")
 
-setTimeout(()=>{
+// 🔥 DIRECT (no delay bug)
 setPage("dashboard")
-},800)
 
 }else{
 
@@ -66,13 +72,12 @@ setMsgType("error")
 }catch(error){
 
 console.log(error)
-setMsg("Server error")
+setMsg("Server error or backend not running")
 setMsgType("error")
 
 }
 
 setLoading(false)
-
 }
 
 // ================= UI =================
@@ -113,7 +118,7 @@ onChange={(e)=>setPassword(e.target.value)}
 
 </div>
 
-<button onClick={login}>
+<button onClick={login} disabled={loading}>
 {loading ? "Logging in..." : "Login"}
 </button>
 
@@ -130,5 +135,4 @@ Forgot Password
 </div>
 
 )
-
 }
