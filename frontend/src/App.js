@@ -27,6 +27,35 @@
 
 // }
 
+// import React,{useState} from "react"
+// import Login from "./pages/Login"
+// import Register from "./pages/Register"
+// import Forgot from "./pages/Forgot"
+
+// function App(){
+
+// const [page,setPage]=useState("login")
+
+// return(
+
+// <div style={{padding:"40px"}}>
+
+// <h1>Enterprise Auth System</h1>
+
+// <button onClick={()=>setPage("login")}>Login</button>
+// <button onClick={()=>setPage("register")}>Register</button>
+// <button onClick={()=>setPage("forgot")}>Forgot Password</button>
+
+// {page==="login" && <Login/>}
+// {page==="register" && <Register/>}
+// {page==="forgot" && <Forgot/>}
+
+// </div>
+
+// )
+
+// }
+
 // export default App
 import React,{useState,useEffect} from "react"
 import Login from "./pages/Login"

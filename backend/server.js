@@ -7,18 +7,18 @@ const path = require("path");
 
 const app = express();
 
+// ✅ MIDDLEWARE
 app.use(express.json());
 app.use(cors());
-
 
 // ================= MONGODB =================
 mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
-
 // ================= AUTH ROUTES =================
-app.use("/api", require("./routes/auth"));
+// ❗ FIXED: /api/auth use karo
+app.use("/api/auth", require("./routes/auth"));
 
 
 // ================= FILE UPLOAD =================
@@ -64,11 +64,11 @@ app.post("/api/students", upload.single("image"), async (req, res) => {
 
     await student.save();
 
-    res.json(student);
+    res.json({ success: true, student });
 
   } catch (err) {
     console.log(err);
-    res.status(500).json({ msg: "Failed to add student" });
+    res.status(500).json({ success:false, msg: "Failed to add student" });
   }
 });
 
@@ -77,9 +77,9 @@ app.post("/api/students", upload.single("image"), async (req, res) => {
 app.get("/api/students", async (req, res) => {
   try {
     const students = await Student.find();
-    res.json(students);
+    res.json({ success:true, students });
   } catch {
-    res.status(500).json({ msg: "Failed to load students" });
+    res.status(500).json({ success:false, msg: "Failed to load students" });
   }
 });
 
@@ -88,9 +88,9 @@ app.get("/api/students", async (req, res) => {
 app.delete("/api/students/:id", async (req, res) => {
   try {
     await Student.findByIdAndDelete(req.params.id);
-    res.json({ msg: "Student deleted" });
+    res.json({ success:true, msg: "Student deleted" });
   } catch {
-    res.status(500).json({ msg: "Delete failed" });
+    res.status(500).json({ success:false, msg: "Delete failed" });
   }
 });
 
@@ -103,17 +103,17 @@ app.post("/api/attendance", async (req, res) => {
     const student = await Student.findById(studentId);
 
     if (!student) {
-      return res.status(404).json({ msg: "Student not found" });
+      return res.status(404).json({ success:false, msg: "Student not found" });
     }
 
     student.attendance.push({ date, status });
 
     await student.save();
 
-    res.json({ msg: "Attendance marked" });
+    res.json({ success:true, msg: "Attendance marked" });
 
   } catch {
-    res.status(500).json({ msg: "Attendance failed" });
+    res.status(500).json({ success:false, msg: "Attendance failed" });
   }
 });
 
@@ -124,13 +124,13 @@ app.get("/api/attendance/:id", async (req, res) => {
     const student = await Student.findById(req.params.id);
 
     if (!student) {
-      return res.status(404).json({ msg: "Student not found" });
+      return res.status(404).json({ success:false, msg: "Student not found" });
     }
 
-    res.json(student.attendance);
+    res.json({ success:true, attendance: student.attendance });
 
   } catch {
-    res.status(500).json({ msg: "Failed to load attendance" });
+    res.status(500).json({ success:false, msg: "Failed to load attendance" });
   }
 });
 
@@ -141,7 +141,7 @@ app.get("/api/attendance-percent/:id", async (req, res) => {
     const student = await Student.findById(req.params.id);
 
     if (!student) {
-      return res.status(404).json({ msg: "Student not found" });
+      return res.status(404).json({ success:false, msg: "Student not found" });
     }
 
     const total = student.attendance.length;
@@ -150,13 +150,14 @@ app.get("/api/attendance-percent/:id", async (req, res) => {
     const percent = total ? ((present / total) * 100).toFixed(2) : 0;
 
     res.json({
+      success:true,
       total,
       present,
       percent
     });
 
   } catch {
-    res.status(500).json({ msg: "Failed to calculate attendance" });
+    res.status(500).json({ success:false, msg: "Failed to calculate attendance" });
   }
 });
 

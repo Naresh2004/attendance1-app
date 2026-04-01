@@ -2,6 +2,9 @@ import React,{useState,useEffect} from "react"
 import axios from "axios"
 import "../Auth.css"
 
+// ✅ FIXED BASE URL
+const API = "https://attendance-backend-lghd.onrender.com/api/auth"
+
 export default function Register({setPage}){
 
 const [email,setEmail]=useState("")
@@ -37,7 +40,7 @@ try{
 setLoading(true)
 
 const res=await axios.post(
-"https://attendance-backend-lghd.onrender.com",
+`${API}/send-otp`,   // ✅ FIXED
 {email}
 )
 
@@ -72,7 +75,7 @@ try{
 setLoading(true)
 
 const res=await axios.post(
-"https://attendance-backend-lghd.onrender.com",
+`${API}/register`,   // ✅ FIXED
 {email,password,otp}
 )
 
@@ -81,12 +84,12 @@ if(res.data.success){
 setMsg("Account Created Successfully")
 setMsgType("success")
 
-// 🔥 OPTIONAL: token save (agar backend bhej raha ho)
+// OPTIONAL TOKEN
 if(res.data.token){
 localStorage.setItem("token", res.data.token)
 }
 
-// 🔥 DIRECT DASHBOARD
+// DIRECT DASHBOARD
 setTimeout(()=>{
 setPage("dashboard")
 },1500)

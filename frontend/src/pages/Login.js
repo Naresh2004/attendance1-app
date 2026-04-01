@@ -1,89 +1,9 @@
-// import React,{useState} from "react"
-// import axios from "axios"
-// import "../Auth.css"
-
-// export default function Login(){
-
-// const [email,setEmail]=useState("")
-// const [password,setPassword]=useState("")
-// const [show,setShow]=useState(false)
-// const [loading,setLoading]=useState(false)
-
-// const login=async()=>{
-
-// try{
-
-// setLoading(true)
-
-// const res=await axios.post(
-// "http://localhost:5000/api/login",
-// {email,password}
-// )
-
-// if(res.data.token){
-// localStorage.setItem("token",res.data.token)
-// }
-
-// alert(res.data.msg)
-
-// }catch(err){
-
-// alert("Login failed")
-
-// }
-
-// setLoading(false)
-
-// }
-
-// return(
-
-// <div className="auth-container">
-
-// <div className="auth-card">
-
-// <h2>Enterprise Login</h2>
-
-// <input
-// type="email"
-// placeholder="Enter Email"
-// onChange={(e)=>setEmail(e.target.value)}
-// />
-
-// <div className="password-box">
-
-// <input
-// type={show ? "text":"password"}
-// placeholder="Enter Password"
-// onChange={(e)=>setPassword(e.target.value)}
-// />
-
-// <span onClick={()=>setShow(!show)}>
-
-// {show ? "Hide":"Show"}
-
-// </span>
-
-// </div>
-
-// <button onClick={login}>
-
-// {loading ? "Logging in..." : "Login"}
-
-// </button>
-
-// <p className="link">Forgot Password?</p>
-
-// </div>
-
-// </div>
-
-// )
-
-// }
 import React,{useState,useEffect} from "react"
 import axios from "axios"
 import "../Auth.css"
+
+// ✅ FIXED BASE URL
+const API = "https://attendance-backend-lghd.onrender.com/api/auth"
 
 export default function Login({setPage}){
 
@@ -120,7 +40,7 @@ try{
 setLoading(true)
 
 const res=await axios.post(
-"https://attendance-backend-lghd.onrender.com",
+`${API}/login`,   // ✅ FIXED
 {email,password}
 )
 

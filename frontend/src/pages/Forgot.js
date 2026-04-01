@@ -261,12 +261,12 @@
 
 // )
 // }
-
-
-
 import React,{useState,useEffect} from "react"
 import axios from "axios"
 import "../Auth.css"
+
+// ✅ FIXED API BASE URL
+const API = "https://attendance-backend-lghd.onrender.com/api/auth"
 
 export default function Forgot({ setPage }){
 
@@ -301,7 +301,7 @@ try{
 setLoading(true)
 
 const res = await axios.post(
-"https://attendance-backend-lghd.onrender.com",
+`${API}/send-otp`,   // ✅ FIXED
 {email}
 )
 
@@ -349,7 +349,7 @@ return
 try{
 
 const res=await axios.post(
-"https://attendance-backend-lghd.onrender.com",
+`${API}/verify-otp`,   // ✅ FIXED
 {email,otp:otpValue}
 )
 
@@ -387,7 +387,7 @@ return
 try{
 
 const res=await axios.post(
-"https://attendance-backend-lghd.onrender.com",
+`${API}/reset-password`,   // ✅ FIXED
 {
   email,
   password,
@@ -403,7 +403,6 @@ setMsgType("success")
 setOtp(["","","","","",""])
 setPassword("")
 
-// 🔥 LOGIN PAGE पे भेजो
 setTimeout(()=>{
   setPage("login")
 },1500)
@@ -506,7 +505,6 @@ onChange={(e)=>setPassword(e.target.value)}
 Reset Password
 </button>
 
-{/* 🔥 LOGIN BUTTON */}
 <button 
 className="login-btn"
 onClick={()=>setPage("login")}
