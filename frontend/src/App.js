@@ -59,69 +59,55 @@
 // export default App
 
 
-import React, { useState, useEffect } from "react";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Forgot from "./pages/Forgot";
-import Dashboard from "./pages/Dashboard";
-import "./Auth.css";
+import React,{useState,useEffect} from "react"
+import Login from "./pages/Login"
+import Register from "./pages/Register"
+import Forgot from "./pages/Forgot"
+import Dashboard from "./pages/Dashboard"
+import "./Auth.css"
 
-function App() {
+function App(){
 
-  // ✅ default null rakho (important)
-  const [page, setPage] = useState(null);
+const [page,setPage]=useState(null)
 
-  // ================= AUTO LOGIN =================
-  useEffect(() => {
+useEffect(()=>{
 
-    const token = localStorage.getItem("token");
+const token=localStorage.getItem("token")
 
-    if (token) {
-      setPage("dashboard");
-    } else {
-      setPage("login");
-    }
-
-  }, []);
-
-  // ================= LOADING FIX =================
-  if (page === null) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "50px" }}>
-        Loading...
-      </div>
-    );
-  }
-
-  return (
-
-    <div className="main-container">
-
-      {/* TITLE */}
-      {page === "login" && <h1 className="title">LOGIN PAGE</h1>}
-      {page === "register" && <h1 className="title">CREATE ACCOUNT</h1>}
-      {page === "forgot" && <h1 className="title">RESET PASSWORD</h1>}
-      {page === "dashboard" && <h1 className="title">ATTENDANCE DASHBOARD</h1>}
-
-      <div className="page-box">
-
-        {/* LOGIN */}
-        {page === "login" && <Login setPage={setPage} />}
-
-        {/* REGISTER */}
-        {page === "register" && <Register setPage={setPage} />}
-
-        {/* FORGOT */}
-        {page === "forgot" && <Forgot setPage={setPage} />}
-
-        {/* DASHBOARD */}
-        {page === "dashboard" && <Dashboard setPage={setPage} />}
-
-      </div>
-
-    </div>
-
-  );
+if(token){
+setPage("dashboard")
+}else{
+setPage("login")
 }
 
-export default App;
+},[])
+
+if(page===null){
+return <div style={{textAlign:"center",marginTop:"50px"}}>Loading...</div>
+}
+
+return(
+
+<div className="main-container">
+
+{page==="login" && <h1 className="title">LOGIN PAGE</h1>}
+{page==="register" && <h1 className="title">CREATE ACCOUNT</h1>}
+{page==="forgot" && <h1 className="title">RESET PASSWORD</h1>}
+{page==="dashboard" && <h1 className="title">ATTENDANCE DASHBOARD</h1>}
+
+<div className="page-box">
+
+{page==="login" && <Login setPage={setPage}/>}
+{page==="register" && <Register setPage={setPage}/>}
+{page==="forgot" && <Forgot setPage={setPage}/>}
+{page==="dashboard" && <Dashboard setPage={setPage}/>}
+
+</div>
+
+</div>
+
+)
+
+}
+
+export default App
