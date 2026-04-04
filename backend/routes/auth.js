@@ -10,93 +10,68 @@ const sendOTP = require("../config/mailer");
 const SECRET = "enterprise_secret";
 
 
-// ================= SEND OTP (SIGNUP) =================
-router.post("/send-otp", async (req,res)=>{
+// ================= SEND SIGNUP OTP =================
+router.post("/send-signup-otp", async (req,res)=>{
 try{
 
-const {email}=req.body;
+const {email}=req.body
 
-if(!email){
-return res.json({success:false,msg:"Email required"});
-}
+const existing=await User.findOne({email})
 
-// check existing user
-const existing = await User.findOne({email});
 if(existing){
-return res.json({success:false,msg:"Email already registered"});
+return res.json({success:false,msg:"Email already registered"})
 }
 
-// generate otp
-const otp=Math.floor(100000 + Math.random() * 900000).toString();
+const otp=Math.floor(100000 + Math.random() * 900000).toString()
 
-// store in global
-global.otp=otp;
-global.otpEmail=email;
-global.otpExpire=Date.now()+300000;
+global.signupOTP=otp
+global.signupEmail=email
+global.signupExpire=Date.now()+300000
 
-// send email
-await sendOTP(email,otp);
+await sendOTP(email,otp)
 
-console.log("✅ SIGNUP OTP:", otp);
+res.json({success:true,msg:"OTP sent to email"})
 
-res.json({success:true,msg:"OTP sent successfully"});
-
-}catch(err){
-console.log("❌ SEND OTP ERROR:",err.message);
-res.json({success:false,msg:"Email sending failed"});
+}catch{
+res.json({success:false,msg:"Failed to send OTP"})
 }
-});
+})
 
 
-// ================= REGISTER =================
-router.post("/register", async (req,res)=>{
+// ================= VERIFY SIGNUP OTP =================
+router.post("/verify-signup-otp", async (req,res)=>{
 try{
 
-const {email,password,otp}=req.body;
+const {email,password,otp}=req.body
 
-if(!email || !password || !otp){
-return res.json({success:false,msg:"All fields required"});
+if(email!==global.signupEmail){
+return res.json({success:false,msg:"Invalid email"})
 }
 
-if(email!==global.otpEmail){
-return res.json({success:false,msg:"Invalid email"});
+if(otp!==global.signupOTP){
+return res.json({success:false,msg:"Invalid OTP"})
 }
 
-if(otp!==global.otp){
-return res.json({success:false,msg:"Invalid OTP"});
+if(Date.now()>global.signupExpire){
+return res.json({success:false,msg:"OTP expired"})
 }
 
-if(Date.now()>global.otpExpire){
-return res.json({success:false,msg:"OTP expired"});
-}
+const hash=await bcrypt.hash(password,10)
 
-// check again
-const existing=await User.findOne({email});
-if(existing){
-return res.json({success:false,msg:"Email already registered"});
-}
-
-// hash password
-const hash=await bcrypt.hash(password,10);
-
-// save user
 const user=new User({
 email,
-password:hash
-});
+password:hash,
+isOtpVerified:false   // 🔥 ADD
+})
 
-await user.save();
+await user.save()
 
-// create token
-const token = jwt.sign({ email }, SECRET, { expiresIn:"1h" });
+res.json({success:true,msg:"Signup successful"})
 
-res.json({success:true,msg:"Signup successful",token});
-
-}catch(err){
-console.log("❌ REGISTER ERROR:",err.message);
-res.json({success:false,msg:"Signup failed"});
+}catch{
+res.json({success:false,msg:"Signup failed"})
 }
-});
+})
 
 
 // ================= LOGIN =================
@@ -105,21 +80,13 @@ try {
 
 const { email, password } = req.body;
 
-if(!email || !password){
-return res.json({ success:false, msg:"All fields required" });
-}
-
 const user = await User.findOne({ email });
 
-if (!user){
-return res.json({ success:false, msg: "User not found" });
-}
+if (!user) return res.json({ success:false, msg: "User not found" });
 
 const match = await bcrypt.compare(password, user.password);
 
-if (!match){
-return res.json({ success:false, msg: "Wrong password" });
-}
+if (!match) return res.json({ success:false, msg: "Wrong password" });
 
 const token = jwt.sign(
 { email: user.email },
@@ -133,46 +100,38 @@ msg: "Login success",
 token
 });
 
-} catch (err){
-console.log("❌ LOGIN ERROR:",err.message);
+} catch {
 res.json({ success:false, msg: "Login failed" });
 }
 });
 
 
 // ================= FORGOT PASSWORD =================
-router.post("/send-forgot-otp", async (req, res) => {
+router.post("/forgot-password", async (req, res) => {
 try {
 
 const { email } = req.body;
 
-if(!email){
-return res.json({ success:false, msg:"Email required" });
-}
-
 const user = await User.findOne({ email });
 
-if (!user){
-return res.json({ success:false, msg: "User not found" });
-}
+if (!user) return res.json({ success:false, msg: "User not found" });
 
 const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
 user.otp = otp;
 user.otpExpire = Date.now() + 300000;
 
+// 🔥 FIX (old users ke liye bhi)
+user.isOtpVerified = false;
+
 await user.save();
 
-// send mail
 await sendOTP(email, otp);
 
-console.log("✅ FORGOT OTP:", otp);
+res.json({ success:true, msg: "OTP sent to email" });
 
-res.json({ success:true, msg: "OTP sent successfully" });
-
-} catch (err){
-console.log("❌ FORGOT OTP ERROR:",err.message);
-res.json({ success:false, msg: "Email sending failed" });
+} catch {
+res.json({ success:false, msg: "Failed to send OTP" });
 }
 });
 
@@ -183,29 +142,24 @@ try {
 
 const { email, otp } = req.body;
 
-if(!email || !otp){
-return res.json({ success:false, msg:"All fields required" });
-}
-
 const user = await User.findOne({ email });
 
-if (!user){
-return res.json({ success:false, msg: "User not found" });
-}
+if (!user) return res.json({ success:false, msg: "User not found" });
 
-if (user.otp !== otp){
+if (user.otp !== otp)
 return res.json({ success:false, msg: "Invalid OTP" });
-}
 
-if (Date.now() > user.otpExpire){
+if (Date.now() > user.otpExpire)
 return res.json({ success:false, msg: "OTP expired" });
-}
 
-res.json({ success:true, msg:"OTP verified" });
+// 🔥 FIX (force update)
+user.isOtpVerified = true;
+await user.save();
 
-} catch (err){
-console.log("❌ VERIFY OTP ERROR:",err.message);
-res.json({ success:false, msg:"Verification failed" });
+res.json({ success:true, msg: "OTP verified" });
+
+} catch {
+res.json({ success:false, msg: "OTP verification failed" });
 }
 });
 
@@ -214,39 +168,32 @@ res.json({ success:false, msg:"Verification failed" });
 router.post("/reset-password", async (req, res) => {
 try {
 
-const { email, password, otp } = req.body;
-
-if(!email || !password || !otp){
-return res.json({ success:false, msg:"All fields required" });
-}
+const { email, password } = req.body;
 
 const user = await User.findOne({ email });
 
-if (!user){
-return res.json({ success:false, msg:"User not found" });
-}
+if (!user) return res.json({ success:false, msg: "User not found" });
 
-if (user.otp !== otp){
-return res.json({ success:false, msg:"Invalid OTP" });
-}
-
-if (Date.now() > user.otpExpire){
-return res.json({ success:false, msg:"OTP expired" });
+// 🔥 MAIN FIX
+if (!user.isOtpVerified) {
+return res.json({ success:false, msg: "OTP not verified" });
 }
 
 const hash = await bcrypt.hash(password, 10);
 
 user.password = hash;
+
+// 🔥 RESET EVERYTHING
 user.otp = null;
 user.otpExpire = null;
+user.isOtpVerified = false;
 
 await user.save();
 
-res.json({ success:true, msg:"Password updated successfully" });
+res.json({ success:true, msg: "Password updated successfully" });
 
-} catch (err){
-console.log("❌ RESET ERROR:",err.message);
-res.json({ success:false, msg:"Reset failed" });
+} catch {
+res.json({ success:false, msg: "Password reset failed" });
 }
 });
 
