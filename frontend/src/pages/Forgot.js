@@ -262,265 +262,241 @@
 // )
 // }
 
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "../Auth.css";
 
-import React,{useState,useEffect} from "react"
-import axios from "axios"
-import "../Auth.css"
+// ✅ FINAL FIXED API
+const API = "https://attendance-backend-lghd.onrender.com/api/auth";
 
-// ✅ FIXED API (auth हटाया)
-const API = "https://attendance-backend-lghd.onrender.com/api"
+export default function Forgot({ setPage }) {
 
-export default function Forgot({ setPage }){
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState(["","","","","",""]);
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(0);
 
-const [email,setEmail]=useState("")
-const [otp,setOtp]=useState(["","","","","",""])
-const [password,setPassword]=useState("")
-const [loading,setLoading]=useState(false)
-const [timer,setTimer]=useState(0)
+  const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState("");
 
-const [msg,setMsg]=useState("")
-const [msgType,setMsgType]=useState("")
+  // ================= AUTO HIDE =================
+  useEffect(() => {
+    if (msg) {
+      const t = setTimeout(() => setMsg(""), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [msg]);
 
-// AUTO HIDE
-useEffect(()=>{
-if(msg){
-const t=setTimeout(()=>setMsg(""),2000)
-return ()=>clearTimeout(t)
-}
-},[msg])
+  // ================= SEND OTP =================
+  const sendOTP = async () => {
 
-// ================= SEND OTP =================
-const sendOTP=async()=>{
+    if (!email) {
+      setMsg("Enter email first");
+      setMsgType("error");
+      return;
+    }
 
-if(!email){
-setMsg("Enter email first")
-setMsgType("error")
-return
-}
+    try {
+      setLoading(true);
 
-try{
-setLoading(true)
+      const res = await axios.post(`${API}/forgot-password`, {
+        email: email.trim()
+      });
 
-// ✅ FIX
-const res = await axios.post(
-`${API}/forgot-password`,
-{ email: email.trim() }
-)
+      if (res.data.success) {
+        setMsg("OTP Sent Successfully ✅");
+        setMsgType("success");
+        setTimer(30);
+        setOtp(["","","","","",""]);
+      } else {
+        setMsg(res.data.msg);
+        setMsgType("error");
+      }
 
-if(res.data.success){
-setMsg("OTP Sent Successfully ✅")
-setMsgType("success")
-setTimer(30)
-setOtp(["","","","","",""])
-}else{
-setMsg(res.data.msg)
-setMsgType("error")
-}
+    } catch (error) {
+      console.log("OTP ERROR:", error.response?.data || error.message);
+      setMsg("OTP send failed");
+      setMsgType("error");
+    }
 
-}catch(error){
-console.log("OTP ERROR:",error.response?.data || error.message)
-setMsg("OTP send failed")
-setMsgType("error")
-}
+    setLoading(false);
+  };
 
-setLoading(false)
-}
+  // ================= TIMER =================
+  useEffect(() => {
+    if (timer === 0) return;
 
-// ================= TIMER =================
-useEffect(()=>{
-if(timer===0) return
+    const interval = setInterval(() => {
+      setTimer(prev => prev - 1);
+    }, 1000);
 
-const interval=setInterval(()=>{
-setTimer(prev=>prev-1)
-},1000)
+    return () => clearInterval(interval);
+  }, [timer]);
 
-return ()=>clearInterval(interval)
+  // ================= VERIFY OTP =================
+  const verifyOTP = async () => {
 
-},[timer])
+    const otpValue = otp.join("");
 
-// ================= VERIFY OTP =================
-const verifyOTP=async()=>{
+    if (otpValue.length !== 6) {
+      setMsg("Enter full OTP");
+      setMsgType("error");
+      return;
+    }
 
-const otpValue=otp.join("")
+    try {
 
-if(otpValue.length!==6){
-setMsg("Enter full OTP")
-setMsgType("error")
-return
-}
+      const res = await axios.post(`${API}/verify-otp`, {
+        email,
+        otp: otpValue
+      });
 
-try{
+      if (res.data.success) {
+        setMsg("OTP Verified Successfully ✅");
+        setMsgType("success");
+      } else {
+        setMsg(res.data.msg || "Invalid OTP");
+        setMsgType("error");
+      }
 
-// ✅ FIX
-const res=await axios.post(
-`${API}/verify-otp`,
-{ email, otp: otpValue }
-)
+    } catch (error) {
+      console.log("VERIFY ERROR:", error.response?.data || error.message);
+      setMsg("OTP verification failed");
+      setMsgType("error");
+    }
+  };
 
-if(res.data.success){
-setMsg("OTP Verified Successfully ✅")
-setMsgType("success")
-}else{
-setMsg(res.data.msg || "Invalid OTP")
-setMsgType("error")
-}
+  // ================= RESET PASSWORD =================
+  const reset = async () => {
 
-}catch(error){
-console.log("VERIFY ERROR:",error.response?.data || error.message)
-setMsg("OTP verification failed")
-setMsgType("error")
-}
-}
+    const otpValue = otp.join("");
 
-// ================= RESET PASSWORD =================
-const reset=async()=>{
+    if (otpValue.length !== 6) {
+      setMsg("Enter OTP first");
+      setMsgType("error");
+      return;
+    }
 
-const otpValue = otp.join("")
+    if (!password) {
+      setMsg("Enter new password");
+      setMsgType("error");
+      return;
+    }
 
-if(otpValue.length!==6){
-setMsg("Enter OTP first")
-setMsgType("error")
-return
-}
+    try {
 
-if(!password){
-setMsg("Enter new password")
-setMsgType("error")
-return
-}
+      const res = await axios.post(`${API}/reset-password`, {
+        email,
+        password
+      });
 
-try{
+      if (res.data.success) {
+        setMsg("Password Reset Successful ✅");
+        setMsgType("success");
 
-// ✅ FIX
-const res=await axios.post(
-`${API}/reset-password`,
-{
-  email,
-  password
-}
-)
+        setOtp(["","","","","",""]);
+        setPassword("");
 
-if(res.data.success){
+        setTimeout(() => {
+          setPage("login");
+        }, 1200);
 
-setMsg("Password Reset Successful ✅")
-setMsgType("success")
+      } else {
+        setMsg(res.data.msg || "Reset failed");
+        setMsgType("error");
+      }
 
-setOtp(["","","","","",""])
-setPassword("")
+    } catch (error) {
+      console.log("RESET ERROR:", error.response?.data || error.message);
+      setMsg("Server error");
+      setMsgType("error");
+    }
+  };
 
-setTimeout(()=>{
-  setPage("login")
-},1200)
+  // ================= OTP INPUT =================
+  const handleOtpChange = (value, index) => {
+    if (!/^[0-9]?$/.test(value)) return;
 
-}else{
-setMsg(res.data.msg || "Reset failed")
-setMsgType("error")
-}
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
 
-}catch(error){
-console.log("RESET ERROR:",error.response?.data || error.message)
-setMsg("Server error")
-setMsgType("error")
-}
-}
+    if (value && index < 5) {
+      document.getElementById(`otp-${index + 1}`).focus();
+    }
+  };
 
-// ================= OTP INPUT =================
-const handleOtpChange=(value,index)=>{
-if(!/^[0-9]?$/.test(value)) return
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      document.getElementById(`otp-${index - 1}`).focus();
+    }
+  };
 
-const newOtp=[...otp]
-newOtp[index]=value
-setOtp(newOtp)
+  // ================= UI =================
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
 
-if(value && index<5){
-document.getElementById(`otp-${index+1}`).focus()
-}
-}
+        <h2>🔐 Forgot Password</h2>
 
-// ================= BACKSPACE =================
-const handleKeyDown=(e,index)=>{
-if(e.key==="Backspace" && !otp[index] && index>0){
-document.getElementById(`otp-${index-1}`).focus()
-}
-}
+        {msg && <p className={`msg ${msgType}`}>{msg}</p>}
 
-// ================= UI =================
-return(
+        <input
+          type="email"
+          placeholder="Enter Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-<div className="auth-container">
+        <button onClick={sendOTP} disabled={loading}>
+          {loading ? "Sending..." : "Send OTP"}
+        </button>
 
-<div className="auth-card">
+        <p className="loader">OTP valid for 5 minutes</p>
 
-<h2>🔐 Forgot Password</h2>
+        <div className="otp-container">
+          {otp.map((digit, index) => (
+            <input
+              key={index}
+              id={`otp-${index}`}
+              className="otp-box"
+              value={digit}
+              onChange={(e) => handleOtpChange(e.target.value, index)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              maxLength="1"
+            />
+          ))}
+        </div>
 
-{msg && (
-<p className={`msg ${msgType}`}>
-{msg}
-</p>
-)}
+        <button onClick={verifyOTP}>
+          Verify OTP
+        </button>
 
-<input
-type="email"
-placeholder="Enter Email"
-value={email}
-onChange={(e)=>setEmail(e.target.value)}
-/>
+        {timer > 0 ? (
+          <p className="loader">Resend OTP in {timer}s</p>
+        ) : (
+          <p className="resend" onClick={sendOTP}>
+            Resend OTP
+          </p>
+        )}
 
-<button onClick={sendOTP} disabled={loading}>
-{loading ? "Sending..." : "Send OTP"}
-</button>
+        <input
+          type="password"
+          placeholder="New Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-<p className="loader">OTP valid for 5 minutes</p>
+        <button onClick={reset}>
+          Reset Password
+        </button>
 
-<div className="otp-container">
-{otp.map((digit,index)=>(
-<input
-key={index}
-id={`otp-${index}`}
-className="otp-box"
-value={digit}
-onChange={(e)=>handleOtpChange(e.target.value,index)}
-onKeyDown={(e)=>handleKeyDown(e,index)}
-maxLength="1"
-/>
-))}
-</div>
+        <button className="login-btn" onClick={() => setPage("login")}>
+          Go to Login
+        </button>
 
-<button onClick={verifyOTP}>
-Verify OTP
-</button>
-
-{timer>0 ? (
-<p className="loader">
-Resend OTP in {timer}s
-</p>
-) : (
-<p className="resend" onClick={sendOTP}>
-Resend OTP
-</p>
-)}
-
-<input
-type="password"
-placeholder="New Password"
-value={password}
-onChange={(e)=>setPassword(e.target.value)}
-/>
-
-<button onClick={reset}>
-Reset Password
-</button>
-
-<button 
-className="login-btn"
-onClick={()=>setPage("login")}
->
-Go to Login
-</button>
-
-</div>
-
-</div>
-
-)
+      </div>
+    </div>
+  );
 }

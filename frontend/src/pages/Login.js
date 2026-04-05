@@ -1,138 +1,132 @@
-import React,{useState,useEffect} from "react"
-import axios from "axios"
-import "../Auth.css"
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "../Auth.css";
 
-// ✅ BASE URL
-const API = "https://attendance-backend-lghd.onrender.com/api/auth"
+// ✅ CORRECT API
+const API = "https://attendance-backend-lghd.onrender.com/api/auth";
 
-export default function Login({setPage}){
+export default function Login({ setPage }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-const [email,setEmail]=useState("")
-const [password,setPassword]=useState("")
-const [show,setShow]=useState(false)
-const [loading,setLoading]=useState(false)
+  const [msg, setMsg] = useState("");
+  const [msgType, setMsgType] = useState("");
 
-const [msg,setMsg]=useState("")
-const [msgType,setMsgType]=useState("")
+  // ================= AUTO LOGIN =================
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setPage("dashboard");
+    }
+  }, [setPage]);
 
-// ================= AUTO LOGIN =================
-useEffect(()=>{
-const token = localStorage.getItem("token")
-if(token){
-setPage("dashboard")
-}
-},[])
+  // ================= AUTO HIDE MESSAGE =================
+  useEffect(() => {
+    if (msg) {
+      const timer = setTimeout(() => setMsg(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [msg]);
 
-// ================= AUTO HIDE MESSAGE =================
-useEffect(()=>{
-if(msg){
-const timer=setTimeout(()=>setMsg(""),2000)
-return ()=>clearTimeout(timer)
-}
-},[msg])
+  // ================= LOGIN =================
+  const login = async () => {
+    if (!email || !password) {
+      setMsg("Please enter email and password");
+      setMsgType("error");
+      return;
+    }
 
-// ================= LOGIN =================
-const login=async()=>{
+    try {
+      setLoading(true);
 
-if(!email || !password){
-setMsg("Please enter email and password")
-setMsgType("error")
-return
-}
+      const res = await axios.post(`${API}/login`, {
+        email: email.trim(),
+        password,
+      });
 
-try{
+      if (res.data.success) {
+        // save token
+        localStorage.setItem("token", res.data.token);
 
-setLoading(true)
+        setMsg("Login Successful ✅");
+        setMsgType("success");
 
-const res=await axios.post(`${API}/login`,{
-email,
-password
-})
+        // redirect
+        setTimeout(() => {
+          setPage("dashboard");
+        }, 500);
 
-// ✅ SUCCESS
-if(res.data.success){
+      } else {
+        setMsg(res.data.msg || "Login failed");
+        setMsgType("error");
+      }
 
-// save token
-localStorage.setItem("token",res.data.token)
+    } catch (error) {
+      console.log("LOGIN ERROR:", error.response?.data || error.message);
 
-// success msg
-setMsg("Login Successful")
-setMsgType("success")
+      setMsg(
+        error.response?.data?.msg ||
+        "Server error / backend issue"
+      );
+      setMsgType("error");
+    }
 
-// 🔥 DIRECT (no delay bug)
-setPage("dashboard")
+    setLoading(false);
+  };
 
-}else{
+  // ================= UI =================
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
 
-setMsg(res.data.msg || "Login failed")
-setMsgType("error")
+        <h2>Login</h2>
 
-}
+        {/* MESSAGE */}
+        {msg && (
+          <p className={`msg ${msgType}`}>
+            {msg}
+          </p>
+        )}
 
-}catch(error){
+        {/* EMAIL */}
+        <input
+          type="email"
+          placeholder="Enter Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
 
-console.log(error)
-setMsg("Server error or backend not running")
-setMsgType("error")
+        {/* PASSWORD */}
+        <div className="password-box">
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Enter Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
 
-}
+          <span onClick={() => setShow(!show)}>
+            {show ? "Hide" : "Show"}
+          </span>
+        </div>
 
-setLoading(false)
-}
+        {/* LOGIN BUTTON */}
+        <button onClick={login} disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
 
-// ================= UI =================
-return(
+        {/* LINKS */}
+        <p className="link" onClick={() => setPage("register")}>
+          Create Account
+        </p>
 
-<div className="auth-container">
+        <p className="link" onClick={() => setPage("forgot")}>
+          Forgot Password
+        </p>
 
-<div className="auth-card">
-
-<h2>LOGIN PAGE</h2>
-
-{/* MESSAGE */}
-{msg && (
-<p className={`msg ${msgType}`}>
-{msg}
-</p>
-)}
-
-<input
-type="email"
-placeholder="Enter Email"
-value={email}
-onChange={(e)=>setEmail(e.target.value)}
-/>
-
-<div className="password-box">
-
-<input
-type={show ? "text":"password"}
-placeholder="Enter Password"
-value={password}
-onChange={(e)=>setPassword(e.target.value)}
-/>
-
-<span onClick={()=>setShow(!show)}>
-{show ? "Hide":"Show"}
-</span>
-
-</div>
-
-<button onClick={login} disabled={loading}>
-{loading ? "Logging in..." : "Login"}
-</button>
-
-<p className="link" onClick={()=>setPage("register")}>
-Create Account
-</p>
-
-<p className="link" onClick={()=>setPage("forgot")}>
-Forgot Password
-</p>
-
-</div>
-
-</div>
-
-)
+      </div>
+    </div>
+  );
 }
