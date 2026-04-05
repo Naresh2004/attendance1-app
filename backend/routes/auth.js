@@ -9,192 +9,165 @@ const sendOTP = require("../config/mailer");
 
 const SECRET = "enterprise_secret";
 
-
 // ================= SEND SIGNUP OTP =================
 router.post("/send-signup-otp", async (req,res)=>{
 try{
-
 const {email}=req.body
 
 const existing=await User.findOne({email})
-
 if(existing){
 return res.json({success:false,msg:"Email already registered"})
 }
 
-const otp=Math.floor(100000 + Math.random() * 900000).toString()
+const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
-global.signupOTP=otp
-global.signupEmail=email
-global.signupExpire=Date.now()+300000
+global.signupOTP = otp
+global.signupEmail = email
+global.signupExpire = Date.now() + 300000
 
 await sendOTP(email,otp)
 
-res.json({success:true,msg:"OTP sent to email"})
+res.json({success:true,msg:"OTP sent"})
 
-}catch{
-res.json({success:false,msg:"Failed to send OTP"})
+}catch(err){
+console.log(err)
+res.json({success:false,msg:"OTP failed"})
 }
 })
-
 
 // ================= VERIFY SIGNUP OTP =================
 router.post("/verify-signup-otp", async (req,res)=>{
 try{
-
 const {email,password,otp}=req.body
 
-if(email!==global.signupEmail){
+if(email !== global.signupEmail){
 return res.json({success:false,msg:"Invalid email"})
 }
 
-if(otp!==global.signupOTP){
+if(otp !== global.signupOTP){
 return res.json({success:false,msg:"Invalid OTP"})
 }
 
-if(Date.now()>global.signupExpire){
+if(Date.now() > global.signupExpire){
 return res.json({success:false,msg:"OTP expired"})
 }
 
-const hash=await bcrypt.hash(password,10)
+const hash = await bcrypt.hash(password,10)
 
-const user=new User({
+const user = new User({
 email,
-password:hash,
-isOtpVerified:false   // 🔥 ADD
+password:hash
 })
 
 await user.save()
 
-res.json({success:true,msg:"Signup successful"})
+res.json({success:true,msg:"Signup success"})
 
-}catch{
+}catch(err){
+console.log(err)
 res.json({success:false,msg:"Signup failed"})
 }
 })
 
-
 // ================= LOGIN =================
-router.post("/login", async (req, res) => {
-try {
+router.post("/login", async (req,res)=>{
+try{
+const {email,password}=req.body
 
-const { email, password } = req.body;
+const user = await User.findOne({email})
+if(!user) return res.json({success:false,msg:"User not found"})
 
-const user = await User.findOne({ email });
+const match = await bcrypt.compare(password,user.password)
+if(!match) return res.json({success:false,msg:"Wrong password"})
 
-if (!user) return res.json({ success:false, msg: "User not found" });
+const token = jwt.sign({email:user.email},SECRET,{expiresIn:"1h"})
 
-const match = await bcrypt.compare(password, user.password);
+res.json({success:true,msg:"Login success",token})
 
-if (!match) return res.json({ success:false, msg: "Wrong password" });
-
-const token = jwt.sign(
-{ email: user.email },
-SECRET,
-{ expiresIn: "1h" }
-);
-
-res.json({
-success:true,
-msg: "Login success",
-token
-});
-
-} catch {
-res.json({ success:false, msg: "Login failed" });
+}catch(err){
+console.log(err)
+res.json({success:false,msg:"Login failed"})
 }
-});
-
+})
 
 // ================= FORGOT PASSWORD =================
-router.post("/forgot-password", async (req, res) => {
-try {
+router.post("/forgot-password", async (req,res)=>{
+try{
+const {email}=req.body
 
-const { email } = req.body;
+const user = await User.findOne({email})
+if(!user) return res.json({success:false,msg:"User not found"})
 
-const user = await User.findOne({ email });
+const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
-if (!user) return res.json({ success:false, msg: "User not found" });
+user.otp = otp
+user.otpExpire = Date.now() + 300000
+user.isOtpVerified = false
 
-const otp = Math.floor(100000 + Math.random() * 900000).toString();
+await user.save()
 
-user.otp = otp;
-user.otpExpire = Date.now() + 300000;
+await sendOTP(email,otp)
 
-// 🔥 FIX (old users ke liye bhi)
-user.isOtpVerified = false;
+res.json({success:true,msg:"OTP sent"})
 
-await user.save();
-
-await sendOTP(email, otp);
-
-res.json({ success:true, msg: "OTP sent to email" });
-
-} catch {
-res.json({ success:false, msg: "Failed to send OTP" });
+}catch(err){
+console.log(err)
+res.json({success:false,msg:"Failed"})
 }
-});
-
+})
 
 // ================= VERIFY OTP =================
-router.post("/verify-otp", async (req, res) => {
-try {
+router.post("/verify-otp", async (req,res)=>{
+try{
+const {email,otp}=req.body
 
-const { email, otp } = req.body;
+const user = await User.findOne({email})
+if(!user) return res.json({success:false,msg:"User not found"})
 
-const user = await User.findOne({ email });
+if(user.otp !== otp)
+return res.json({success:false,msg:"Invalid OTP"})
 
-if (!user) return res.json({ success:false, msg: "User not found" });
+if(Date.now() > user.otpExpire)
+return res.json({success:false,msg:"OTP expired"})
 
-if (user.otp !== otp)
-return res.json({ success:false, msg: "Invalid OTP" });
+user.isOtpVerified = true
+await user.save()
 
-if (Date.now() > user.otpExpire)
-return res.json({ success:false, msg: "OTP expired" });
+res.json({success:true,msg:"OTP verified"})
 
-// 🔥 FIX (force update)
-user.isOtpVerified = true;
-await user.save();
-
-res.json({ success:true, msg: "OTP verified" });
-
-} catch {
-res.json({ success:false, msg: "OTP verification failed" });
+}catch(err){
+console.log(err)
+res.json({success:false,msg:"Verification failed"})
 }
-});
-
+})
 
 // ================= RESET PASSWORD =================
-router.post("/reset-password", async (req, res) => {
-try {
+router.post("/reset-password", async (req,res)=>{
+try{
+const {email,password}=req.body
 
-const { email, password } = req.body;
+const user = await User.findOne({email})
+if(!user) return res.json({success:false,msg:"User not found"})
 
-const user = await User.findOne({ email });
-
-if (!user) return res.json({ success:false, msg: "User not found" });
-
-// 🔥 MAIN FIX
-if (!user.isOtpVerified) {
-return res.json({ success:false, msg: "OTP not verified" });
+if(!user.isOtpVerified){
+return res.json({success:false,msg:"OTP not verified"})
 }
 
-const hash = await bcrypt.hash(password, 10);
+const hash = await bcrypt.hash(password,10)
 
-user.password = hash;
+user.password = hash
+user.otp = null
+user.otpExpire = null
+user.isOtpVerified = false
 
-// 🔥 RESET EVERYTHING
-user.otp = null;
-user.otpExpire = null;
-user.isOtpVerified = false;
+await user.save()
 
-await user.save();
+res.json({success:true,msg:"Password updated"})
 
-res.json({ success:true, msg: "Password updated successfully" });
-
-} catch {
-res.json({ success:false, msg: "Password reset failed" });
+}catch(err){
+console.log(err)
+res.json({success:false,msg:"Reset failed"})
 }
-});
+})
 
 module.exports = router;

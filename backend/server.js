@@ -7,7 +7,7 @@ const path = require("path");
 
 const app = express();
 
-// ✅ MIDDLEWARE
+// ================= MIDDLEWARE =================
 app.use(express.json());
 app.use(cors());
 
@@ -16,8 +16,9 @@ mongoose.connect(process.env.MONGO_URI)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
 
-// ================= AUTH ROUTES =================
-// ❗ FIXED: /api/auth use karo
+
+// ================= ROUTES =================
+// 🔥 AUTH ROUTES (IMPORTANT)
 app.use("/api/auth", require("./routes/auth"));
 
 
@@ -34,7 +35,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-// ================= STUDENT SCHEMA =================
+// ================= STUDENT MODEL =================
 const studentSchema = new mongoose.Schema({
   name: String,
   mobile: String,
@@ -78,7 +79,8 @@ app.get("/api/students", async (req, res) => {
   try {
     const students = await Student.find();
     res.json({ success:true, students });
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success:false, msg: "Failed to load students" });
   }
 });
@@ -89,7 +91,8 @@ app.delete("/api/students/:id", async (req, res) => {
   try {
     await Student.findByIdAndDelete(req.params.id);
     res.json({ success:true, msg: "Student deleted" });
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success:false, msg: "Delete failed" });
   }
 });
@@ -106,19 +109,27 @@ app.post("/api/attendance", async (req, res) => {
       return res.status(404).json({ success:false, msg: "Student not found" });
     }
 
-    student.attendance.push({ date, status });
+    // 🔥 DUPLICATE DATE FIX
+    const exists = student.attendance.find(a => a.date === date);
+
+    if (exists) {
+      exists.status = status;
+    } else {
+      student.attendance.push({ date, status });
+    }
 
     await student.save();
 
-    res.json({ success:true, msg: "Attendance marked" });
+    res.json({ success:true, msg: "Attendance updated" });
 
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success:false, msg: "Attendance failed" });
   }
 });
 
 
-// ================= GET STUDENT ATTENDANCE =================
+// ================= GET ATTENDANCE =================
 app.get("/api/attendance/:id", async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
@@ -129,13 +140,14 @@ app.get("/api/attendance/:id", async (req, res) => {
 
     res.json({ success:true, attendance: student.attendance });
 
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success:false, msg: "Failed to load attendance" });
   }
 });
 
 
-// ================= ATTENDANCE PERCENTAGE =================
+// ================= ATTENDANCE PERCENT =================
 app.get("/api/attendance-percent/:id", async (req, res) => {
   try {
     const student = await Student.findById(req.params.id);
@@ -156,14 +168,21 @@ app.get("/api/attendance-percent/:id", async (req, res) => {
       percent
     });
 
-  } catch {
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ success:false, msg: "Failed to calculate attendance" });
   }
 });
 
 
-// ================= STATIC UPLOADS =================
+// ================= STATIC FILE =================
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
+// ================= TEST ROUTE =================
+app.get("/", (req,res)=>{
+  res.send("API RUNNING 🚀");
+});
 
 
 // ================= SERVER =================

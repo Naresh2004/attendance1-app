@@ -1,17 +1,17 @@
 const nodemailer = require("nodemailer");
 
-// ✅ PRODUCTION READY TRANSPORTER
+// ✅ ENV based config (SAFE)
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,        // 🔥 IMPORTANT
-  secure: true,     // 🔥 MUST true for 465
+  port: 465,
+  secure: true,
   auth: {
-   user: "ng23456789000@gmail.com",
-pass: "hdnhaloddjfuqssv"
+    user: process.env.EMAIL,
+    pass: process.env.PASS
   }
 });
 
-// ✅ VERIFY CONNECTION (debug)
+// ✅ VERIFY CONNECTION
 transporter.verify(function (error, success) {
   if (error) {
     console.log("❌ SMTP ERROR:", error.message);
@@ -20,12 +20,13 @@ transporter.verify(function (error, success) {
   }
 });
 
+
 // ================= SEND OTP =================
 const sendOTP = async (email, otp) => {
   try {
 
     const info = await transporter.sendMail({
-      from: `"Auth System" <${process.env.EMAIL}>`,
+      from: `"Auth System" <${process.env.EMAIL}>`, // ✅ same email
       to: email,
       subject: "OTP Verification",
       html: `
