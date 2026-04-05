@@ -261,12 +261,14 @@
 
 // )
 // }
+
+
 import React,{useState,useEffect} from "react"
 import axios from "axios"
 import "../Auth.css"
 
-// ✅ FIXED API BASE URL
-const API = "https://attendance-backend-lghd.onrender.com/api/auth"
+// ✅ FIXED API (auth हटाया)
+const API = "https://attendance-backend-lghd.onrender.com/api"
 
 export default function Forgot({ setPage }){
 
@@ -276,11 +278,10 @@ const [password,setPassword]=useState("")
 const [loading,setLoading]=useState(false)
 const [timer,setTimer]=useState(0)
 
-// MESSAGE
 const [msg,setMsg]=useState("")
 const [msgType,setMsgType]=useState("")
 
-// AUTO HIDE MESSAGE
+// AUTO HIDE
 useEffect(()=>{
 if(msg){
 const t=setTimeout(()=>setMsg(""),2000)
@@ -300,13 +301,14 @@ return
 try{
 setLoading(true)
 
+// ✅ FIX
 const res = await axios.post(
-`${API}/send-otp`,   // ✅ FIXED
-{email}
+`${API}/forgot-password`,
+{ email: email.trim() }
 )
 
 if(res.data.success){
-setMsg("OTP Sent Successfully")
+setMsg("OTP Sent Successfully ✅")
 setMsgType("success")
 setTimer(30)
 setOtp(["","","","","",""])
@@ -315,7 +317,8 @@ setMsg(res.data.msg)
 setMsgType("error")
 }
 
-}catch{
+}catch(error){
+console.log("OTP ERROR:",error.response?.data || error.message)
 setMsg("OTP send failed")
 setMsgType("error")
 }
@@ -348,20 +351,22 @@ return
 
 try{
 
+// ✅ FIX
 const res=await axios.post(
-`${API}/verify-otp`,   // ✅ FIXED
-{email,otp:otpValue}
+`${API}/verify-otp`,
+{ email, otp: otpValue }
 )
 
 if(res.data.success){
-setMsg("OTP Verified Successfully")
+setMsg("OTP Verified Successfully ✅")
 setMsgType("success")
 }else{
 setMsg(res.data.msg || "Invalid OTP")
 setMsgType("error")
 }
 
-}catch{
+}catch(error){
+console.log("VERIFY ERROR:",error.response?.data || error.message)
 setMsg("OTP verification failed")
 setMsgType("error")
 }
@@ -386,18 +391,18 @@ return
 
 try{
 
+// ✅ FIX
 const res=await axios.post(
-`${API}/reset-password`,   // ✅ FIXED
+`${API}/reset-password`,
 {
   email,
-  password,
-  otp: otpValue
+  password
 }
 )
 
 if(res.data.success){
 
-setMsg("Password Reset Successful")
+setMsg("Password Reset Successful ✅")
 setMsgType("success")
 
 setOtp(["","","","","",""])
@@ -405,14 +410,15 @@ setPassword("")
 
 setTimeout(()=>{
   setPage("login")
-},1500)
+},1200)
 
 }else{
 setMsg(res.data.msg || "Reset failed")
 setMsgType("error")
 }
 
-}catch{
+}catch(error){
+console.log("RESET ERROR:",error.response?.data || error.message)
 setMsg("Server error")
 setMsgType("error")
 }
@@ -460,7 +466,7 @@ value={email}
 onChange={(e)=>setEmail(e.target.value)}
 />
 
-<button onClick={sendOTP}>
+<button onClick={sendOTP} disabled={loading}>
 {loading ? "Sending..." : "Send OTP"}
 </button>
 

@@ -189,12 +189,12 @@
 
 // }
 
-
 import React,{useState,useEffect} from "react"
 import axios from "axios"
 import "../Auth.css"
 
-const API = "https://attendance-backend-lghd.onrender.com/api/auth"
+// ✅ सही API (auth हटाया)
+const API = "https://attendance-backend-lghd.onrender.com/api"
 
 export default function Register({setPage}){
 
@@ -229,9 +229,11 @@ try{
 
 setLoading(true)
 
-const res=await axios.post(`${API}/send-otp`,{email})
+// ✅ FIXED API
+const res=await axios.post(`${API}/send-signup-otp`,{
+  email: email.trim()
+})
 
-// 🔥 DEBUG
 console.log("SEND OTP RESPONSE:",res.data)
 
 if(res.data.success){
@@ -271,13 +273,13 @@ try{
 
 setLoading(true)
 
-const res=await axios.post(`${API}/register`,{
+// ✅ FIXED API
+const res=await axios.post(`${API}/verify-signup-otp`,{
 email,
 password,
 otp
 })
 
-// 🔥 DEBUG
 console.log("VERIFY RESPONSE:",res.data)
 
 if(res.data.success){
@@ -289,8 +291,10 @@ if(res.data.token){
 localStorage.setItem("token",res.data.token)
 }
 
-// direct dashboard
+// redirect
+setTimeout(()=>{
 setPage("dashboard")
+},1000)
 
 }else{
 setMsg(res.data.msg || "Invalid OTP")
