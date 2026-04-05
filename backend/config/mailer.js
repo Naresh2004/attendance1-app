@@ -1,9 +1,11 @@
 require("dotenv").config();
 const nodemailer = require("nodemailer");
 
+// ================= DEBUG =================
 console.log("MAIL USER:", process.env.EMAIL);
 console.log("MAIL PASS:", process.env.PASS ? "Loaded" : "Not Loaded");
 
+// ================= TRANSPORT =================
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
@@ -14,7 +16,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// ✅ VERIFY FIX
+// ================= VERIFY =================
 (async () => {
   try {
     await transporter.verify();
@@ -24,6 +26,7 @@ const transporter = nodemailer.createTransport({
   }
 })();
 
+// ================= SEND OTP =================
 const sendOTP = async (email, otp) => {
   try {
 
@@ -33,7 +36,13 @@ const sendOTP = async (email, otp) => {
       from: `"Auth System" <${process.env.EMAIL}>`,
       to: email,
       subject: "OTP Verification",
-      html: `<h2>Your OTP: ${otp}</h2>`
+      html: `
+        <div style="font-family:sans-serif">
+          <h2>Your OTP Code</h2>
+          <h1 style="color:#6c63ff">${otp}</h1>
+          <p>This OTP is valid for 5 minutes.</p>
+        </div>
+      `
     });
 
     console.log("✅ OTP sent:", otp);

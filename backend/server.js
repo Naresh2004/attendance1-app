@@ -5,11 +5,18 @@ const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 
+// 🔥 IMPORTANT: MAILER LOAD
+require("./config/mailer");
+
 const app = express();
 
 // ================= MIDDLEWARE =================
 app.use(express.json());
 app.use(cors());
+
+// ================= DEBUG =================
+console.log("EMAIL:", process.env.EMAIL);
+console.log("PASS:", process.env.PASS ? "Loaded" : "Not Loaded");
 
 // ================= MONGODB =================
 mongoose.connect(process.env.MONGO_URI)
@@ -18,7 +25,6 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 // ================= ROUTES =================
-// 🔥 AUTH ROUTES (IMPORTANT)
 app.use("/api/auth", require("./routes/auth"));
 
 
@@ -109,7 +115,6 @@ app.post("/api/attendance", async (req, res) => {
       return res.status(404).json({ success:false, msg: "Student not found" });
     }
 
-    // 🔥 DUPLICATE DATE FIX
     const exists = student.attendance.find(a => a.date === date);
 
     if (exists) {

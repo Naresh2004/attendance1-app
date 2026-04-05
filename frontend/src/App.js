@@ -59,55 +59,79 @@
 // export default App
 
 
-import React,{useState,useEffect} from "react"
-import Login from "./pages/Login"
-import Register from "./pages/Register"
-import Forgot from "./pages/Forgot"
-import Dashboard from "./pages/Dashboard"
-import "./Auth.css"
+import React, { useState, useEffect } from "react";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Forgot from "./pages/Forgot";
+import Dashboard from "./pages/Dashboard";
+import "./Auth.css";
 
-function App(){
+function App() {
+  const [page, setPage] = useState(null);
 
-const [page,setPage]=useState(null)
+  // ================= CHECK LOGIN =================
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-useEffect(()=>{
+    if (token) {
+      setPage("dashboard");
+    } else {
+      setPage("login");
+    }
+  }, []);
 
-const token=localStorage.getItem("token")
+  // ================= LOADING =================
+  if (page === null) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "80px" }}>
+        <h2>Loading...</h2>
+      </div>
+    );
+  }
 
-if(token){
-setPage("dashboard")
-}else{
-setPage("login")
+  // ================= TITLE =================
+  const getTitle = () => {
+    switch (page) {
+      case "login":
+        return "LOGIN PAGE";
+      case "register":
+        return "CREATE ACCOUNT";
+      case "forgot":
+        return "RESET PASSWORD";
+      case "dashboard":
+        return "ATTENDANCE DASHBOARD";
+      default:
+        return "";
+    }
+  };
+
+  // ================= PAGE RENDER =================
+  const renderPage = () => {
+    switch (page) {
+      case "login":
+        return <Login setPage={setPage} />;
+      case "register":
+        return <Register setPage={setPage} />;
+      case "forgot":
+        return <Forgot setPage={setPage} />;
+      case "dashboard":
+        return <Dashboard setPage={setPage} />;
+      default:
+        return <Login setPage={setPage} />;
+    }
+  };
+
+  return (
+    <div className="main-container">
+      
+      <h1 className="title">{getTitle()}</h1>
+
+      <div className="page-box">
+        {renderPage()}
+      </div>
+
+    </div>
+  );
 }
 
-},[])
-
-if(page===null){
-return <div style={{textAlign:"center",marginTop:"50px"}}>Loading...</div>
-}
-
-return(
-
-<div className="main-container">
-
-{page==="login" && <h1 className="title">LOGIN PAGE</h1>}
-{page==="register" && <h1 className="title">CREATE ACCOUNT</h1>}
-{page==="forgot" && <h1 className="title">RESET PASSWORD</h1>}
-{page==="dashboard" && <h1 className="title">ATTENDANCE DASHBOARD</h1>}
-
-<div className="page-box">
-
-{page==="login" && <Login setPage={setPage}/>}
-{page==="register" && <Register setPage={setPage}/>}
-{page==="forgot" && <Forgot setPage={setPage}/>}
-{page==="dashboard" && <Dashboard setPage={setPage}/>}
-
-</div>
-
-</div>
-
-)
-
-}
-
-export default App
+export default App;

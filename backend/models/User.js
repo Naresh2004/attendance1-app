@@ -1,11 +1,38 @@
+const mongoose = require("mongoose");
 
-const mongoose=require("mongoose")
+const userSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: true,
+    unique: true,          // 🔥 duplicate email block
+    lowercase: true,
+    trim: true
+  },
 
-const userSchema=new mongoose.Schema({
- email:String,
- password:String,
- otp:String,
- otpExpire:Date
-})
+  password: {
+    type: String,
+    required: true
+  },
 
-module.exports=mongoose.model("User",userSchema)
+  otp: {
+    type: String,
+    default: null
+  },
+
+  otpExpire: {
+    type: Date,
+    default: null
+  },
+
+  isOtpVerified: {
+    type: Boolean,
+    default: false
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+module.exports = mongoose.model("User", userSchema);
